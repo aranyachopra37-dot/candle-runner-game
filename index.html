@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>CANDLE RUNNER ($CANDLE) // The Official Pump.fun Arcade Game</title>
+  <meta name="description" content="Ride the green candle to Raydium graduation. Dodge dev dumps, collect SOL gems, and escape liquidations. The official meme game for $CANDLE on Pump.fun.">
+  
+  <!-- Retro & Monospace Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=JetBrains+Mono:wght@400;600;700;800&family=Space+Grotesk:wght@600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.4/dist/confetti.browser.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #07060f;
+      --arcade-green: #00ff66;
+      --arcade-green-glow: rgba(0, 255, 102, 0.4);
+      --arcade-red: #ff0055;
+      --arcade-red-glow: rgba(255, 0, 85, 0.4);
+      --arcade-cyan: #00f0ff;
+      --arcade-yellow: #ffe600;
+      --arcade-purple: #8b00ff;
+      --card-bg: rgba(18, 14, 33, 0.85);
+      --border: #281e45;
+      --border-bright: #4e3880;
+      --font-pixel: 'Press Start 2P', monospace;
+      --font-mono: 'JetBrains Mono', monospace;
+      --font-sans: 'Space Grotesk', sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+
+    body {
+      background-color: var(--bg);
+      color: #fff;
+      font-family: var(--font-mono);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(circle at 50% 10%, rgba(139, 0, 255, 0.15) 0%, transparent 50%),
+        linear-gradient(rgba(40, 30, 69, 0.3) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(40, 30, 69, 0.3) 1px, transparent 1px);
+      background-size: 100% 100%, 32px 32px, 32px 32px;
+    }
+
+    /* Scanline Overlay */
+    .scanlines {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+      background-size: 100% 3px, 6px 100%;
+      pointer-events: none;
+      z-index: 99;
+      opacity: 0.75;
+    }
+
+    /* Top Marquee Bar */
+    .marquee-bar {
+      background: #030206;
+      border-bottom: 2px solid var(--border);
+      padding: 6px 0;
+      overflow: hidden;
+      font-family: var(--font-pixel);
+      font-size: 10px;
+      color: var(--arcade-cyan);
+      display: flex;
+      white-space: nowrap;
+    }
+
+    .marquee-track {
+      display: inline-block;
+      animation: marquee 25s linear infinite;
+    }
+
+    @keyframes marquee {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    /* Header Nav */
+    header {
+      border-bottom: 2px solid var(--border);
+      background: rgba(10, 7, 20, 0.9);
+      backdrop-filter: blur(12px);
+      padding: 12px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .logo-badge {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+
+    .pixel-logo-icon {
+      width: 36px;
+      height: 36px;
+      background: #000;
+      border: 2px solid var(--arcade-green);
+      box-shadow: 0 0 10px var(--arcade-green-glow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .logo-text {
+      font-family: var(--font-pixel);
+      font-size: 16px;
+      color: #fff;
+      letter-spacing: 0.05em;
+      text-shadow: 0 0 8px var(--arcade-green);
+    }
+
+    .logo-sub {
+      font-size: 10px;
+      color: var(--arcade-green);
+      font-weight: 700;
+    }
+
+    /* CA Box in Header */
+    .ca-box {
+      background: #000;
+      border: 1px solid var(--border-bright);
+      padding: 6px 12px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .ca-box:hover {
+      border-color: var(--arcade-green);
+      box-shadow: 0 0 10px var(--arcade-green-glow);
+    }
+
+    .ca-label {
+      font-family: var(--font-pixel);
+      font-size: 9px;
+      color: var(--arcade-yellow);
+    }
+
+    .ca-address {
+      color: #cbd5e1;
+      font-weight: 700;
+    }
+
+    /* Buttons */
+    .btn-arcade {
+      font-family: var(--font-pixel);
+      font-size: 11px;
+      padding: 10px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      transition: all 0.15s;
+      border: none;
+      text-transform: uppercase;
+    }
+
+    .btn-buy {
+      background: var(--arcade-green);
+      color: #000;
+      box-shadow: 0 4px 0 #00993d, 0 0 15px var(--arcade-green-glow);
+      font-weight: 800;
+    }
+
+    .btn-buy:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 0 #00993d, 0 0 25px var(--arcade-green-glow);
+    }
+
+    .btn-buy:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 #00993d;
+    }
+
+    .btn-ghost {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-bright);
+      color: #fff;
+    }
+
+    .btn-ghost:hover {
+      border-color: var(--arcade-cyan);
+      color: var(--arcade-cyan);
+    }
+
+    /* Main Container */
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px 16px;
+      width: 100%;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* Game Cabinet Frame */
+    .arcade-cabinet {
+      background: #0d0a17;
+      border: 3px solid var(--border-bright);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 
+        0 0 30px rgba(139, 0, 255, 0.3),
+        inset 0 0 20px rgba(0, 0, 0, 0.8);
+      position: relative;
+      max-width: 720px;
+      width: 100%;
+      margin-bottom: 24px;
+    }
+
+    .cabinet-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px dashed var(--border);
+      font-family: var(--font-pixel);
+      font-size: 10px;
+    }
+
+    .live-dot {
+      width: 8px; height: 8px;
+      background: var(--arcade-green);
+      border-radius: 50%;
+      display: inline-block;
+      box-shadow: 0 0 8px var(--arcade-green);
+      animation: blink 1.2s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* Canvas Screen */
+    .screen-wrapper {
+      position: relative;
+      width: 100%;
+      height: 440px;
+      background: #020205;
+      border: 2px solid #000;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.9);
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* In-game Overlays */
+    .overlay-screen {
+      position: absolute;
+      inset: 0;
+      background: rgba(4, 3, 10, 0.88);
+      backdrop-filter: blur(4px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      text-align: center;
+      z-index: 10;
+    }
+
+    .overlay-title {
+      font-family: var(--font-pixel);
+      font-size: 22px;
+      color: var(--arcade-green);
+      text-shadow: 0 0 12px var(--arcade-green-glow);
+      margin-bottom: 12px;
+      line-height: 1.4;
+    }
+
+    .overlay-sub {
+      font-size: 13px;
+      color: #94a3b8;
+      max-width: 440px;
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    .score-badge {
+      font-family: var(--font-pixel);
+      font-size: 14px;
+      color: var(--arcade-yellow);
+      background: rgba(255, 230, 0, 0.1);
+      border: 1px solid rgba(255, 230, 0, 0.3);
+      padding: 10px 18px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+    }
+
+    .btn-play {
+      font-family: var(--font-pixel);
+      font-size: 13px;
+      background: var(--arcade-green);
+      color: #000;
+      padding: 14px 28px;
+      border-radius: 6px;
+      cursor: pointer;
+      box-shadow: 0 5px 0 #00993d, 0 0 20px var(--arcade-green-glow);
+      font-weight: 800;
+      border: none;
+      animation: pulseBtn 1.5s infinite;
+    }
+
+    @keyframes pulseBtn {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.04); }
+    }
+
+    .btn-play:hover {
+      background: #33ff85;
+      box-shadow: 0 5px 0 #00993d, 0 0 30px var(--arcade-green);
+    }
+
+    .control-hint {
+      margin-top: 18px;
+      font-size: 11px;
+      color: #64748b;
+      font-family: var(--font-pixel);
+      line-height: 1.6;
+    }
+
+    /* Cabinet Controls Bar */
+    .cabinet-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px dashed var(--border);
+    }
+
+    /* Bonding Curve Progress Bar */
+    .curve-container {
+      background: #000;
+      border: 1px solid var(--border-bright);
+      border-radius: 6px;
+      padding: 12px 16px;
+      width: 100%;
+      max-width: 720px;
+      margin-bottom: 24px;
+    }
+
+    .curve-header {
+      display: flex;
+      justify-content: space-between;
+      font-family: var(--font-pixel);
+      font-size: 10px;
+      margin-bottom: 8px;
+    }
+
+    .curve-bar-track {
+      background: #110d22;
+      height: 12px;
+      border-radius: 3px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .curve-bar-fill {
+      background: linear-gradient(90deg, var(--arcade-cyan), var(--arcade-green));
+      height: 100%;
+      width: 42%;
+      box-shadow: 0 0 10px var(--arcade-green);
+      transition: width 0.3s;
+    }
+
+    /* Grid of Features & Tokenomics */
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 16px;
+      width: 100%;
+      max-width: 720px;
+      margin-bottom: 24px;
+    }
+
+    .info-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+    }
+
+    .card-title {
+      font-family: var(--font-pixel);
+      font-size: 12px;
+      color: var(--arcade-yellow);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .leaderboard-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 11px;
+    }
+
+    .leaderboard-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 10px;
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 4px;
+      border-left: 2px solid var(--border-bright);
+    }
+
+    .tokenomics-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+
+    .tokenomics-row {
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
+      padding-bottom: 6px;
+    }
+
+    .tokenomics-row strong {
+      color: #fff;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 2px solid var(--border);
+      background: #030206;
+      padding: 24px;
+      text-align: center;
+      font-size: 11px;
+      color: #64748b;
+      margin-top: auto;
+    }
+
+    .footer-warning {
+      color: #ef4444;
+      font-family: var(--font-pixel);
+      font-size: 9px;
+      margin-bottom: 8px;
+    }
+
+    /* Mobile Controls Touch Zone */
+    .mobile-touch-hint {
+      display: none;
+      font-family: var(--font-pixel);
+      font-size: 9px;
+      color: var(--arcade-cyan);
+      text-align: center;
+      margin-top: 8px;
+    }
+
+    @media (max-width: 768px) {
+      .mobile-touch-hint { display: block; }
+      .header-inner { flex-direction: column; gap: 8px; }
+      .screen-wrapper { height: 380px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="scanlines"></div>
+
+  <!-- Top Retro Marquee Ticker -->
+  <div class="marquee-bar">
+    <div class="marquee-track">
+      🚀 $CANDLE: RIDE THE GREEN CANDLE TO RAYDIUM GRADUATION 🚀 DODGE DEV DUMPS • COLLECT SOL GEMS • APE ON PUMP.FUN • 100% FAIR LAUNCH • 0% DEV ALLOCATION • HIGHSCORE: $69,000 MCAP • INSERT COIN TO PLAY • 
+      🚀 $CANDLE: RIDE THE GREEN CANDLE TO RAYDIUM GRADUATION 🚀 DODGE DEV DUMPS • COLLECT SOL GEMS • APE ON PUMP.FUN • 100% FAIR LAUNCH • 0% DEV ALLOCATION • HIGHSCORE: $69,000 MCAP • INSERT COIN TO PLAY • 
+    </div>
+  </div>
+
+  <!-- Main Header -->
+  <header>
+    <div class="header-inner">
+      <a href="#" class="logo-badge">
+        <div class="pixel-logo-icon">🟩</div>
+        <div>
+          <div class="logo-text">CANDLE RUNNER</div>
+          <div class="logo-sub">$CANDLE // PUMP.FUN OFFICIAL</div>
+        </div>
+      </a>
+
+      <!-- CA Box with 1-Click Copy -->
+      <div class="ca-box" onclick="copyCA()" id="ca-chip" title="Click to copy Contract Address">
+        <span class="ca-label">CA:</span>
+        <span class="ca-address" id="ca-display">CaNdLe99x7umpFun...Grad</span>
+        <span style="font-size: 10px;">📋</span>
+      </div>
+
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <button class="btn-arcade btn-ghost" onclick="toggleMute()" id="sound-btn">🔊 SFX ON</button>
+        <a href="https://pump.fun/" target="_blank" rel="noopener noreferrer" class="btn-arcade btn-buy" id="pump-link">
+          <span>APE ON PUMP.FUN</span>
+          <span>&nearr;</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main>
+
+    <!-- Arcade Cabinet Container -->
+    <div class="arcade-cabinet">
+      <div class="cabinet-header">
+        <div>
+          <span class="live-dot"></span>
+          <span>ARCADE STATUS: INSERTED</span>
+        </div>
+        <div style="color: var(--arcade-yellow);">
+          <span>MCAP: </span>
+          <span id="live-mcap">$0</span>
+        </div>
+        <div>
+          <span>HIGH: </span>
+          <span id="best-score" style="color: var(--arcade-green);">$0</span>
+        </div>
+      </div>
+
+      <!-- Screen Wrapper with Canvas -->
+      <div class="screen-wrapper" id="screen-container">
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- Start Screen Overlay -->
+        <div class="overlay-screen" id="start-overlay">
+          <div style="font-size: 36px; margin-bottom: 10px;">🕯️🚀</div>
+          <h1 class="overlay-title">CANDLE RUNNER</h1>
+          <p class="overlay-sub">
+            The market is brutal. Pilot your green candle up the chart. Dodge red liquidation dildos and dev dump bags. Reach $69K MCAP to trigger Raydium graduation!
+          </p>
+          <button class="btn-play" onclick="startGame()">PRESS SPACE / TAP TO FLY</button>
+          <div class="control-hint">
+            CONTROLS: [SPACE] OR [CLICK / TAP] TO BOOST UP
+          </div>
+        </div>
+
+        <!-- Game Over Screen Overlay -->
+        <div class="overlay-screen" id="gameover-overlay" style="display: none;">
+          <div style="font-size: 32px; margin-bottom: 8px;" id="gameover-icon">💥</div>
+          <h2 class="overlay-title" id="gameover-title" style="color: var(--arcade-red);">YOU GOT RUGGED!</h2>
+          
+          <div class="score-badge" id="final-score-card">
+            MCAP REACHED: $0
+          </div>
+
+          <p class="overlay-sub" id="gameover-roast">
+            The dev dumped his bags on your head at the local top. Classic.
+          </p>
+
+          <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
+            <button class="btn-play" onclick="startGame()">TRY AGAIN</button>
+            <button class="btn-arcade btn-ghost" onclick="shareToTwitter()" style="border-color: var(--arcade-cyan); color: var(--arcade-cyan);">
+              <span>SHARE TO X (TWITTER)</span>
+              <span>🐦</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="mobile-touch-hint">
+        📱 TAP ANYWHERE ON SCREEN TO BOOST
+      </div>
+
+      <div class="cabinet-controls">
+        <div style="font-size: 10px; color: #64748b;">
+          ENGINE: 60FPS WEBAUDIO ARCADE V1.0
+        </div>
+        <div style="font-size: 10px; color: var(--arcade-cyan);">
+          COLLECT 💎 GEMS FOR 5X MULTIPLIER
+        </div>
+      </div>
+    </div>
+
+    <!-- Live Bonding Curve Tracker -->
+    <div class="curve-container">
+      <div class="curve-header">
+        <span>BONDING CURVE GRADUATION PROGRESS</span>
+        <span style="color: var(--arcade-green);" id="curve-pct">54% TO RAYDIUM ($69K)</span>
+      </div>
+      <div class="curve-bar-track">
+        <div class="curve-bar-fill" id="curve-bar" style="width: 54%;"></div>
+      </div>
+    </div>
+
+    <!-- Info & Leaderboard Grid -->
+    <div class="info-grid">
+      <!-- High Scores Leaderboard -->
+      <div class="info-card">
+        <div class="card-title">
+          <span>🏆</span>
+          <span>WALL OF CHADS (LEADERBOARD)</span>
+        </div>
+        <div class="leaderboard-list">
+          <div class="leaderboard-item">
+            <span>1. GCR_Ape</span>
+            <strong style="color: var(--arcade-green);">$69,000 (GRADUATED)</strong>
+          </div>
+          <div class="leaderboard-item">
+            <span>2. Ansem_Calls</span>
+            <strong style="color: var(--arcade-green);">$58,400</strong>
+          </div>
+          <div class="leaderboard-item">
+            <span>3. DiamondHands_99</span>
+            <strong style="color: var(--arcade-yellow);">$42,100</strong>
+          </div>
+          <div class="leaderboard-item">
+            <span>4. SolWhale</span>
+            <strong style="color: #cbd5e1;">$29,500</strong>
+          </div>
+          <div class="leaderboard-item">
+            <span>5. You (Current Best)</span>
+            <strong style="color: var(--arcade-cyan);" id="user-best-lead">$0</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tokenomics Spec -->
+      <div class="info-card">
+        <div class="card-title">
+          <span>🪙</span>
+          <span>TOKENOMICS // $CANDLE</span>
+        </div>
+        <div class="tokenomics-list">
+          <div class="tokenomics-row">
+            <span>TOTAL SUPPLY:</span>
+            <strong>1,000,000,000 $CANDLE</strong>
+          </div>
+          <div class="tokenomics-row">
+            <span>LAUNCHPAD:</span>
+            <strong style="color: var(--arcade-green);">100% PUMP.FUN</strong>
+          </div>
+          <div class="tokenomics-row">
+            <span>DEV ALLOCATION:</span>
+            <strong>0% (DEV APED ON CURVE)</strong>
+          </div>
+          <div class="tokenomics-row">
+            <span>RAYDIUM GRADUATION:</span>
+            <strong>$69,000 MCAP</strong>
+          </div>
+          <div class="tokenomics-row">
+            <span>LIQUIDITY LOCK:</span>
+            <strong style="color: var(--arcade-cyan);">100% LP BURNED FOREVER</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-warning">
+      ⚠️ MEMECOINS ARE HIGH RISK. MOST GO TO ZERO. PLAY RESPONSIBLY.
+    </div>
+    <div>
+      © 2026 CANDLE RUNNER ($CANDLE) // BUILT FOR THE PUMP.FUN COMMUNITY
+    </div>
+  </footer>
+
+  <script>
+    // ==========================================
+    // CONFIGURATION: UPDATE CONTRACT ADDRESS HERE
+    // ==========================================
+    const CONFIG = {
+      TOKEN_NAME: "CANDLE RUNNER",
+      TOKEN_TICKER: "$CANDLE",
+      CONTRACT_ADDRESS: "CaNdLe99x7umpFunGre3nCandleToTheM00nGrad111", // <-- Replace with your Pump.fun CA!
+      PUMP_FUN_URL: "https://pump.fun/",
+      TWITTER_HANDLE: "@CandleRunnerSol",
+    };
+
+    // Initialize UI from Config
+    document.getElementById('ca-display').textContent = `${CONFIG.CONTRACT_ADDRESS.slice(0, 6)}...${CONFIG.CONTRACT_ADDRESS.slice(-4)}`;
+    document.getElementById('pump-link').href = CONFIG.PUMP_FUN_URL;
+
+    // 1-Click Copy CA with Confetti
+    function copyCA() {
+      navigator.clipboard.writeText(CONFIG.CONTRACT_ADDRESS);
+      const chip = document.getElementById('ca-chip');
+      const orig = chip.innerHTML;
+      chip.innerHTML = '<span style="color: var(--arcade-green); font-weight: 800;">COPIED CA! 🚀</span>';
+      playChime();
+      confetti({ particleCount: 30, spread: 50, origin: { y: 0.1 } });
+      setTimeout(() => { chip.innerHTML = orig; }, 1600);
+    }
+
+    // ==========================================
+    // WEB AUDIO API 8-BIT SOUND SYNTHESIZER
+    // ==========================================
+    let audioCtx = null;
+    let sfxMuted = false;
+
+    function initAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function toggleMute() {
+      sfxMuted = !sfxMuted;
+      document.getElementById('sound-btn').textContent = sfxMuted ? '🔇 SFX OFF' : '🔊 SFX ON';
+      if (!sfxMuted) playJump();
+    }
+
+    function playJump() {
+      if (sfxMuted) return;
+      initAudio();
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(160, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(480, audioCtx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.08);
+      } catch (e) {}
+    }
+
+    function playGem() {
+      if (sfxMuted) return;
+      initAudio();
+      try {
+        const now = audioCtx.currentTime;
+        [523, 659, 784, 1046].forEach((f, i) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(f, now + i * 0.04);
+          gain.gain.setValueAtTime(0.08, now + i * 0.04);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.04 + 0.1);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now + i * 0.04);
+          osc.stop(now + i * 0.04 + 0.1);
+        });
+      } catch (e) {}
+    }
+
+    function playChime() {
+      if (sfxMuted) return;
+      initAudio();
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.15);
+      } catch (e) {}
+    }
+
+    function playExplosion() {
+      if (sfxMuted) return;
+      initAudio();
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(140, audioCtx.currentTime);
+        osc.frequency.linearRampToValueAtTime(30, audioCtx.currentTime + 0.35);
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.35);
+      } catch (e) {}
+    }
+
+    // ==========================================
+    // 60FPS ARCADE GAME ENGINE
+    // ==========================================
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    let animationId = null;
+
+    let isPlaying = false;
+    let currentScore = 0;
+    let highScore = parseInt(localStorage.getItem('candle_high_score') || '0');
+    document.getElementById('best-score').textContent = `$${highScore.toLocaleString()}`;
+    document.getElementById('user-best-lead').textContent = `$${highScore.toLocaleString()}`;
+
+    // Resize Canvas to fit screen wrapper
+    function resizeCanvas() {
+      canvas.width = canvas.parentElement.clientWidth;
+      canvas.height = canvas.parentElement.clientHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // Game Entities
+    let player = {
+      x: 80,
+      y: 200,
+      vy: 0,
+      width: 32,
+      height: 24,
+      gravity: 0.38,
+      jumpForce: -6.5,
+      rotation: 0
+    };
+
+    let obstacles = [];
+    let gems = [];
+    let particles = [];
+    let frameCount = 0;
+    let speed = 3.5;
+
+    function startGame() {
+      initAudio();
+      document.getElementById('start-overlay').style.display = 'none';
+      document.getElementById('gameover-overlay').style.display = 'none';
+
+      resizeCanvas();
+      player.y = canvas.height / 2;
+      player.vy = 0;
+      obstacles = [];
+      gems = [];
+      particles = [];
+      currentScore = 0;
+      speed = 3.5;
+      frameCount = 0;
+      isPlaying = true;
+
+      playJump();
+      if (animationId) cancelAnimationFrame(animationId);
+      gameLoop();
+    }
+
+    function boost() {
+      if (!isPlaying) return;
+      player.vy = player.jumpForce;
+      playJump();
+
+      // Emit rocket exhaust particles
+      for (let i = 0; i < 5; i++) {
+        particles.push({
+          x: player.x - 10,
+          y: player.y + 12 + (Math.random() * 8 - 4),
+          vx: -speed * 1.5 - Math.random() * 3,
+          vy: (Math.random() - 0.5) * 2,
+          radius: Math.random() * 3 + 2,
+          color: Math.random() > 0.4 ? '#00ff66' : '#ffe600',
+          life: 20
+        });
+      }
+    }
+
+    // Input handlers (Keyboard & Touch)
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') {
+        e.preventDefault();
+        if (!isPlaying) startGame();
+        else boost();
+      }
+    });
+
+    const screenContainer = document.getElementById('screen-container');
+    screenContainer.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      if (!isPlaying) startGame();
+      else boost();
+    });
+
+    // Spawn Red Liquidation Spikes
+    function spawnObstacle() {
+      const gap = 125;
+      const minHeight = 40;
+      const maxHeight = canvas.height - gap - minHeight;
+      const topHeight = Math.floor(Math.random() * (maxHeight - minHeight + 1)) + minHeight;
+      const bottomY = topHeight + gap;
+
+      obstacles.push({
+        x: canvas.width + 20,
+        topHeight: topHeight,
+        bottomY: bottomY,
+        bottomHeight: canvas.height - bottomY,
+        width: 44,
+        passed: false
+      });
+
+      // 50% chance to spawn a Solana Gem in the gap
+      if (Math.random() > 0.4) {
+        gems.push({
+          x: canvas.width + 42,
+          y: topHeight + gap / 2,
+          radius: 9,
+          collected: false
+        });
+      }
+    }
+
+    // Main 60FPS Game Loop
+    function gameLoop() {
+      if (!isPlaying) return;
+      frameCount++;
+
+      // Physics
+      player.vy += player.gravity;
+      player.y += player.vy;
+      player.rotation = Math.min(Math.PI / 4, Math.max(-Math.PI / 4, player.vy * 0.08));
+
+      // Gradual speed-up as MCAP grows
+      speed = 3.5 + Math.min(currentScore / 12000, 3.5);
+
+      // Spawn obstacles every 90 frames
+      if (frameCount % Math.max(55, Math.floor(95 - speed * 4)) === 0) {
+        spawnObstacle();
+      }
+
+      // Check boundaries
+      if (player.y + player.height > canvas.height || player.y < 0) {
+        gameOver("LIQUIDATED BY THE ORDER BOOK");
+        return;
+      }
+
+      // Clear & Draw Cyber Grid Background
+      ctx.fillStyle = '#05030a';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Draw faint candle chart lines in background
+      ctx.strokeStyle = 'rgba(0, 255, 102, 0.08)';
+      ctx.lineWidth = 1;
+      for (let x = (frameCount * -1) % 40; x < canvas.width; x += 40) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+      }
+
+      // Update & Draw Particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life--;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fill();
+        if (p.life <= 0) particles.splice(i, 1);
+      }
+
+      // Update & Draw Obstacles (Red Liquidation Spikes)
+      for (let i = obstacles.length - 1; i >= 0; i--) {
+        const obs = obstacles[i];
+        obs.x -= speed;
+
+        // Draw Top Red Candle Spike
+        ctx.fillStyle = '#ff0055';
+        ctx.shadowColor = 'rgba(255, 0, 85, 0.5)';
+        ctx.shadowBlur = 10;
+        ctx.fillRect(obs.x + 18, 0, 8, obs.topHeight - 12); // Wick
+        ctx.fillRect(obs.x, 0, obs.width, obs.topHeight - 16); // Body
+        ctx.fillStyle = '#ff3377';
+        ctx.fillRect(obs.x + 4, obs.topHeight - 16, obs.width - 8, 8); // Tip
+
+        // Draw Bottom Red Candle Spike
+        ctx.fillStyle = '#ff0055';
+        ctx.fillRect(obs.x + 18, obs.bottomY + 12, 8, obs.bottomHeight); // Wick
+        ctx.fillRect(obs.x, obs.bottomY + 16, obs.width, obs.bottomHeight); // Body
+        ctx.fillStyle = '#ff3377';
+        ctx.fillRect(obs.x + 4, obs.bottomY + 8, obs.width - 8, 8); // Tip
+        ctx.shadowBlur = 0;
+
+        // Collision Check (AABB with player)
+        if (
+          player.x + player.width - 4 > obs.x &&
+          player.x + 4 < obs.x + obs.width
+        ) {
+          if (player.y + 4 < obs.topHeight || player.y + player.height - 4 > obs.bottomY) {
+            gameOver("DELETED BY A RED DILDO SPIKE");
+            return;
+          }
+        }
+
+        // Score update on pass
+        if (!obs.passed && obs.x + obs.width < player.x) {
+          obs.passed = true;
+          currentScore += 1000;
+          updateScoreHUD();
+        }
+
+        if (obs.x + obs.width < -20) obstacles.splice(i, 1);
+      }
+
+      // Update & Draw Gems
+      for (let i = gems.length - 1; i >= 0; i--) {
+        const gem = gems[i];
+        gem.x -= speed;
+
+        // Draw glowing golden diamond
+        ctx.save();
+        ctx.translate(gem.x, gem.y);
+        ctx.rotate((frameCount * 0.05) % (Math.PI * 2));
+        ctx.fillStyle = '#ffe600';
+        ctx.shadowColor = 'rgba(255, 230, 0, 0.8)';
+        ctx.shadowBlur = 12;
+        ctx.beginPath();
+        ctx.moveTo(0, -gem.radius);
+        ctx.lineTo(gem.radius, 0);
+        ctx.lineTo(0, gem.radius);
+        ctx.lineTo(-gem.radius, 0);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+
+        // Check gem collision
+        const dist = Math.hypot(player.x + 16 - gem.x, player.y + 12 - gem.y);
+        if (dist < gem.radius + 16) {
+          playGem();
+          currentScore += 2500;
+          updateScoreHUD();
+          confetti({ particleCount: 15, spread: 40, origin: { x: gem.x / canvas.width, y: gem.y / canvas.height } });
+          gems.splice(i, 1);
+          continue;
+        }
+
+        if (gem.x < -20) gems.splice(i, 1);
+      }
+
+      // Draw Player (Green Candle Rocket + Pixel Degen)
+      ctx.save();
+      ctx.translate(player.x + player.width / 2, player.y + player.height / 2);
+      ctx.rotate(player.rotation);
+
+      // Green Candle Rocket Body
+      ctx.fillStyle = '#00ff66';
+      ctx.shadowColor = 'rgba(0, 255, 102, 0.8)';
+      ctx.shadowBlur = 16;
+      ctx.fillRect(-16, -10, 28, 20); // Candle body
+      ctx.fillStyle = '#70ffaa';
+      ctx.fillRect(-12, -7, 20, 14); // Inner highlight
+
+      // Nosecone
+      ctx.fillStyle = '#00f0ff';
+      ctx.beginPath();
+      ctx.moveTo(12, -10);
+      ctx.lineTo(24, 0);
+      ctx.lineTo(12, 10);
+      ctx.closePath();
+      ctx.fill();
+
+      // Wick on nose
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(24, 0);
+      ctx.lineTo(30, 0);
+      ctx.stroke();
+
+      // Exhaust Thruster Ring
+      ctx.fillStyle = '#281e45';
+      ctx.fillRect(-20, -6, 4, 12);
+
+      // Eyes on the candle (Degen emoji glasses)
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, -6, 6, 6);
+      ctx.fillRect(8, -6, 6, 6);
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(2, -5, 2, 2);
+      ctx.fillRect(10, -5, 2, 2);
+
+      ctx.restore();
+
+      // Draw On-Screen In-Game HUD
+      ctx.font = '10px "Press Start 2P", monospace';
+      ctx.fillStyle = '#00ff66';
+      ctx.fillText(`MCAP: $${currentScore.toLocaleString()}`, 16, 24);
+
+      // Check for Raydium Graduation Victory ($69,000)
+      if (currentScore >= 69000 && !window.hasGraduated) {
+        window.hasGraduated = true;
+        celebrateGraduation();
+      }
+
+      animationId = requestAnimationFrame(gameLoop);
+    }
+
+    function updateScoreHUD() {
+      document.getElementById('live-mcap').textContent = `$${currentScore.toLocaleString()}`;
+      
+      // Update bonding curve percentage
+      const pct = Math.min(100, Math.floor((currentScore / 69000) * 100));
+      document.getElementById('curve-bar').style.width = `${pct}%`;
+      document.getElementById('curve-pct').textContent = `${pct}% TO RAYDIUM ($69K)`;
+    }
+
+    function gameOver(roastCause) {
+      isPlaying = false;
+      playExplosion();
+      if (animationId) cancelAnimationFrame(animationId);
+
+      if (currentScore > highScore) {
+        highScore = currentScore;
+        localStorage.setItem('candle_high_score', highScore);
+        document.getElementById('best-score').textContent = `$${highScore.toLocaleString()}`;
+        document.getElementById('user-best-lead').textContent = `$${highScore.toLocaleString()}`;
+      }
+
+      document.getElementById('final-score-card').textContent = `MCAP REACHED: $${currentScore.toLocaleString()}`;
+      document.getElementById('gameover-title').textContent = "YOU GOT RUGGED!";
+      document.getElementById('gameover-icon').textContent = "💥";
+
+      let rank = "PAPER HAND JEET";
+      if (currentScore >= 50000) rank = "GIGA CHAD";
+      else if (currentScore >= 25000) rank = "DIAMOND HANDS";
+      else if (currentScore >= 10000) rank = "MIDCURVE APE";
+
+      document.getElementById('gameover-roast').innerHTML = `
+        <strong>${roastCause}</strong><br>
+        Your Degen Rank: <span style="color: var(--arcade-yellow); font-weight: 700;">${rank}</span><br>
+        ${currentScore >= 69000 ? '🎉 YOU GRADUATED TO RAYDIUM!' : 'Better luck next candle, anon.'}
+      `;
+
+      document.getElementById('gameover-overlay').style.display = 'flex';
+    }
+
+    function celebrateGraduation() {
+      confetti({ particleCount: 120, spread: 80, origin: { y: 0.4 } });
+      playGem();
+    }
+
+    // Viral Twitter / X Share Generator
+    function shareToTwitter() {
+      const text = encodeURIComponent(
+        `I reached $${currentScore.toLocaleString()} Market Cap in $CANDLE Runner before getting rugged! 🕯️🚀\n\nCan you reach Raydium graduation at $69K?\n\nPlay now: ${window.location.href}\nCA: ${CONFIG.CONTRACT_ADDRESS}\n\n#Pumpfun #Solana $CANDLE`
+      );
+      window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
+    }
+  </script>
+</body>
+</html>
